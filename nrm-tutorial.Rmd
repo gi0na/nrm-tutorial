@@ -1,0 +1,297 @@
+---
+title: "NRM Tutorial"
+author: "Giona Casiraghi"
+date: "7/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This is the tutorial companion to the article ``Multiplex Network Regression: How do relations drive interactions?''.
+It provides the code to reproduce the results shown in the application section of the article.
+The source code of this tutorial is available at \url{https://www.github.com/gi0na/nrm-tutorial}.
+
+## Installation
+
+The R package `ghypernet` provides the routines used to estimate network regression models.
+Install the latest version from GitHub, to ensure to have all latest features.
+The R package `adjConvertR` provides some useful and fast functions to construct adjacency matrices from dataframes.
+
+```{r installation, run=FALSE}
+# install ghypernet
+devtools::install_github('gi0na/ghypernet')
+# install adjConvertR
+devtools::install_github('gi0na/adjConvertR')
+
+library(ghypernet)
+library(adjConvertR)
+library(readr)
+```
+
+## Load SocioPatterns Data
+
+The next step is to download the data from \url{sociopatterns.org}, and load it into the rsession.
+
+```{r data}
+# create data directory
+dir.create(file.path('data'), showWarnings = FALSE)
+
+# download the files
+download.file(
+  url = 'http://www.sociopatterns.org/wp-content/uploads/2015/07/High-School_data_2013.csv.gz',
+  destfile = 'data/High-School_data_2013.csv.gz')
+download.file(
+  url = 'http://www.sociopatterns.org/wp-content/uploads/2015/09/metadata_2013.txt',
+  destfile = 'data/metadata_2013.txt')
+download.file(
+  url = 'http://www.sociopatterns.org/wp-content/uploads/2015/07/Facebook-known-pairs_data_2013.csv.gz',
+  destfile = 'data/Facebook-known-pairs_data_2013.csv.gz')
+download.file(
+  url = 'http://www.sociopatterns.org/wp-content/uploads/2015/07/Friendship-network_data_2013.csv.gz',
+  destfile = 'data/Friendship-network_data_2013.csv.gz')
+
+# decompress
+files <- list.files(path = "data/", pattern = '*.gz')
+for(f in files){
+  R.utils::gunzip(paste0('data/',f), overwrite=TRUE)
+}
+
+# load
+# contact edge list
+el_contacts <- read_table2("~/Documents/Matematica/SG/data/SocioPatterns/highschool/High-School_data_2013.csv", 
+                           col_names = FALSE, col_types = cols(X2 = col_character(), X3 = col_character()))
+
+# vertices metadata
+metadata <- read_table2("~/Documents/Matematica/SG/data/SocioPatterns/highschool/metadata_2013.txt", 
+                        col_names = FALSE, col_types = cols(X1 = col_character()))
+
+# facebook edge list
+el_fb <- read_table2("~/Documents/Matematica/SG/data/SocioPatterns/highschool/Facebook-known-pairs_data_2013.csv", 
+                        col_names = FALSE, col_types = cols(X1 = col_character(), X2 = col_character(), X3 = col_logical()))
+
+# friendship edge list
+el_fr <- read_table2("~/Documents/Matematica/SG/data/SocioPatterns/highschool/Friendship-network_data_2013.csv", 
+                     col_names = FALSE, col_types = cols(X1 = col_character(), X2 = col_character()))
+```
+
+Create the adjacency matrices for all the layer of the network regression model.
+
+```{r adjacencies preparation}
+# adjacency matrix
+adj <- get_adjacency(x = el_contacts, select_cols = 2:3, multiedge = TRUE, sparse = FALSE, directed = F)
+
+# metadata ordering and removing missing vertices
+metadata <- metadata[-which(!(metadata$X1 %in% rownames(adj))),]
+maporder <- function(id,v) which(id==v)
+metadata <- metadata[Vectorize(FUN = maporder, vectorize.args = 'id')(id=rownames(adj),metadata$X1),]
+
+# fb adjacency matrix
+fb <- get_adjacency(x = el_fb, select_cols = 1:3, multiedge = FALSE, sparse = FALSE, directed = T, nodes = rownames(adj))
+
+# friendship net adjacency matrix
+fr <- get_adjacency(x = el_fr, sparse = FALSE, directed = T, nodes = rownames(adj))
+
+# check that names of different matrices match
+all(rownames(adj)==rownames(fb))
+all(rownames(adj)==rownames(fr))
+```
+Construct the predictors for the `friendship' layers:
+```{r friendship}
+# construct predictor for reciprocal friendships
+fr_pred <- fr*t(fr)
+fr_pred[fr_pred==1] <- exp(1)
+fr_pred[fr_pred==0] <- 1
+
+# construct predictor for non-reciprocated friendships
+fr_prednr <- fr+t(fr)
+fr_prednr[fr_prednr==1] <- exp(1)
+fr_prednr[fr_prednr<exp(1)] <- 1
+
+frlist <- list(fr=fr_pred, fr_half=fr_prednr)
+```
+
+Construct the predictors for the `facebook' layers:
+```{r facebook}
+# construct predictor for facebook connections
+fb_pred <- fb*(exp(1)-1)+1
+
+# construct dummy variable for missing connections
+indat <- unique(c(el_fb$X1,el_fb$X2))
+fb_eps <- matrix(1,nrow(adj), ncol(adj))
+fb_eps[
+  -as.integer(plyr::mapvalues(x = indat, from = rownames(fb), to = seq_along(rownames(fb)))),
+  -as.integer(plyr::mapvalues(x = indat, from = rownames(fb), to = seq_along(rownames(fb))))
+  ] <- exp(1)
+
+fblist <- list(fb=fb_pred, fb_eps=fb_eps)
+```
+
+## Network Regression Models
+Estimate the nrm models using (a) the friendship social network as covariate, and (b) the facebook connections.
+The function `nrm` in `ghypernet` takes argument: a list of the covariates as adjacency matrices, the adjacency matrix of the dependent variable, the directionality of the network and the presence of selfloops, the (optional) initial value to start the numerical optimisation.
+Check the help of `nrm` with `?nrm`.
+
+The first model we estimate is (a):
+```{r (a)}
+fr.m <- nrm(w = frlist, adj = adj, directed = FALSE, selfloops = FALSE, init=c(3,2))
+fr.m
+```
+
+Model (b) is estimated in a similar fashion:
+```{r (b)}
+fb.m <- nrm(w = fblist, adj = adj, directed = F, selfloops = F, init=c(3,2))
+fb.m
+```
+Note that model (a) explain much better than data compared to (b), as can be seen from McFadden $\rho^2$.
+
+## Introducing the control variables
+
+The next step is constructing the control variables using the metadata available about the nodes.
+To do so, we first use a function that fills a matrix with Euler's number $e$ if two nodes have the same label, and $1$ otherwise.
+```{r helper function}
+samelabel <- function(v,w) ifelse((v==w), exp(1), 1)
+samelabelv <- Vectorize(FUN = Vectorize(FUN = samelabel, vectorize.args = 'v'), vectorize.args = 'w')
+```
+
+Using the vectorized function `samelabelv` we can then construct the three control layers of our regression model.
+```{r control layers}
+class <- list(class=samelabelv(metadata$X2,metadata$X2))
+
+topics <- substr(metadata$X2, start = 1, stop = 2)
+topic <- list(topic=samelabelv(topics,topics))
+
+samelabel <- function(v,w) ifelse((v==w & v!='Unknown'), exp(1), 1)
+gender <- list(gender=samelabelv(metadata$X3,metadata$X3))
+```
+
+We can now introduce the control variables into the model estimated above.
+
+```{r control-models}
+(frcontrol.m <- nrm(w = c(class, topic, gender, frlist), adj = adj, directed = FALSE, selfloops = FALSE, init=c(4,2, .5, coef(fr.m))))
+(fbcontrol.m <- nrm(w = c(class, topic, gender, fblist), adj = adj, directed = FALSE, selfloops = FALSE, init=c(4,2, .5, coef(fb.m))))
+```
+
+## Full model and model comparisons
+
+The final step is the construction of the full model, using all 7 covariate layers.
+Once we have estimated the model, we can compare the different models using AIC.
+
+```{r full-model}
+(full.m <- nrm(w = c(class, topic, gender, frlist,fblist), adj = adj, directed = FALSE, selfloops = FALSE, init=c(coef(frcontrol.m), coef(fb.m))))
+AIC(fr.m,fb.m,frcontrol.m,fbcontrol.m,full.m)
+```
+
+Here we see that the largest contribution, among model (a) and (b), comes from (a).
+That means, most of the explaining power for the observed interactions has to be ascribed to the friendship social network.
+On the other hand, the explaining power provided by the facebook network vanishes as soon as the friendship network is added to the model.
+
+Finally, we can use the `screenreg` function in the `texreg` package to nicely compare the different models and visualise them side by side.
+First, though we need to create a method for `screenreg` that is compatible with `nrm` objects.
+This will be included in the next version of `ghypernet`.
+
+```{r texreg}
+library(texreg)
+## texreg package
+## Texreg: does not (yet) support nrm or gyhpe-class
+# use the extract()-function to make this available
+extract.nrm.cluster <- function(model,sumsum){
+  # calculate SE, tvalues and pvalues
+  coeffic <- as.numeric(model$coef)
+  stderr <- (model$confint[,2] - model$confint[,1])/5.15
+  tvalues = coeffic/stderr
+  pval <- exp(-0.717*tvalues - 0.416*tvalues^2)
+  
+  # then create and return a texreg object (replace NULL with actual values):
+  tr <- createTexreg(
+    coef.names = names(model$coef),    # character vector of coefficient labels
+    coef = coeffic,          # numeric vector with coefficients
+    se = stderr,            # numeric vector with standard error values
+    pvalues = pval,       # numeric vector with p-values
+    gof.names = c("AIC", "McFadden $R^2$"),     # character vector with goodness-of-fit labels
+    gof = c(model$AIC, model$R2)           # numeric vector of goodness-of-fit statistics
+    #gof.decimal = NULL    # logical vector: GOF statistic has decimal points?
+  )
+  return(tr)
+}
+setMethod("extract", signature = className("nrm", "ghype"), 
+          definition = extract.nrm.cluster)
+```
+
+```{r model table, results='asis'}
+htmlreg(list(fr.m,fb.m,frcontrol.m,fbcontrol.m,full.m), digits = 3, 
+       custom.coef.map =   list('class'='$R^{(C)}$', 
+                                'fr'='$R^{(f)}$',
+                                'topic'='$R^{(T)}$',
+                                'fb'='$R^{(\\text{fb})}$',
+                                'fb_eps'='$R^{(\\varepsilon)}$', 
+                                'gender'='$R^{(G)}$', 
+                                'fr_half'='$R^{(1/2f)}$'
+       ),
+       single.row = TRUE, doctype = FALSE,
+       reorder.coef = c(c(1,3,6), c(2,7), 4:5), 
+       groups = list('Control' = 1:3,  'Friendship' = 4:5,
+                     'Facebook' = 6:7), 
+       custom.model.names = c('$\\Theta^{(a)}$' , '$\\Theta^{(b)}$' , '$\\Theta^{(a\\dagger)}$' , '$\\Theta^{(b\\dagger)}$' , '$\\Theta^{(a\\dagger+b\\dagger)}$'))
+```
+
+## Stepwise Model Selection
+
+Finally, we show how to perform a forward stepwise model selection using nrm.
+The routine `nrm_selection` allows to do this automatically.
+First, we need to construct the predictors as a nested list so that the algorithm can cycle through all of them.
+```{r stepwise-preds}
+# first, create list of predictors
+preds <- c(class, 
+           topic, 
+           gender,
+           frlist,
+           # because we cannot split the fb layer from the dummy for the missing data, we nest them into another list
+           fb=list(fblist)
+           )
+
+# then we wrap all predictors into lists using the function below
+preds <- createPredictors(preds)
+
+# finally, we need to fix the fb layer so that is only one list deep
+preds$fb <- preds$fb$fb
+
+# we perform a similar job with the initial values, to speed up the computation
+init <- c(coef(frcontrol.m), coef(fb.m))
+init[6] <- list(init[6:7])
+init[7] <- NULL
+```
+Next, we can run the stepwise model selection routine.
+```{r stepwise}
+summary(selmodels <- nrm_selection(adj = adj, predictors = preds, directed = FALSE, selfloops = FALSE, init=init))
+```
+
+Finally, we can exploit again `texreg` for a nicer and clearer visualisation of the results.
+To improve the readability, we rescale the AIC values such that the best model has AIC$=0$.
+This is always possible as the AIC value is only useful when compared relative to another AIC value.
+```{r aic-fix}
+for(i in seq_along(selmodels$models)){
+  selmodels$models[[i]]$AIC <- selmodels$models[[i]]$AIC-selmodels$models[[length(selmodels$models)]]$AIC
+}
+```
+
+We use a similar snippet as the one above to print the results.
+```{r stepwise-table, results='asis'}
+htmlreg(selmodels$models, digits = 3, 
+       custom.coef.map =   list('class'='$R^{(C)}$', 
+                                'fr'='$R^{(f)}$',
+                                'topic'='$R^{(T)}$',
+                                'fb'='$R^{(\\text{fb})}$',
+                                'fb_eps'='$R^{(\\varepsilon)}$', 
+                                'gender'='$R^{(G)}$', 
+                                'fr_half'='$R^{(1/2f)}$'
+       ),
+       single.row = TRUE, doctype = FALSE,
+       reorder.coef = c(c(1,3,6), c(2,7), 4:5),
+       groups = list('Control' = 1:3,  'Friendship' = 4:5,
+                     'Facebook' = 6:7), 
+       custom.model.names = c('(1)', '(2)', '(3)', '(4)','(5)','(6)'))
+```
