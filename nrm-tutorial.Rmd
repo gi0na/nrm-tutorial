@@ -21,7 +21,7 @@ The R package `ghypernet` provides the routines used to estimate network regress
 Install the latest version from GitHub, to ensure to have all latest features.
 The R package `adjConvertR` provides some useful and fast functions to construct adjacency matrices from dataframes.
 
-```{r installation, run=FALSE}
+```{r installation, echo = T, results = 'hide'}
 # install ghypernet
 devtools::install_github('gi0na/ghypernet')
 # install adjConvertR

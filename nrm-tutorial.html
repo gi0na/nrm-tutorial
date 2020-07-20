@@ -391,7 +391,7 @@ summary {
 <p>The R package <code>ghypernet</code> provides the routines used to estimate network regression models. Install the latest version from GitHub, to ensure to have all latest features. The R package <code>adjConvertR</code> provides some useful and fast functions to construct adjacency matrices from dataframes.</p>
 <pre class="r"><code># install ghypernet
 devtools::install_github(&#39;gi0na/ghypernet&#39;)</code></pre>
-<pre><code>## Skipping install of &#39;ghypernet&#39; from a github remote, the SHA1 (f1cee6b3) has not changed since last install.
+<pre><code>## Skipping install of &#39;ghypernet&#39; from a github remote, the SHA1 (29c54e21) has not changed since last install.
 ##   Use `force = TRUE` to force installation</code></pre>
 <pre class="r"><code># install adjConvertR
 devtools::install_github(&#39;gi0na/adjConvertR&#39;)</code></pre>
@@ -619,20 +619,21 @@ gender &lt;- list(gender=samelabelv(metadata$X3,metadata$X3))</code></pre>
 <p>Here we see that the largest contribution, among model (a) and (b), comes from (a). That means, most of the explaining power for the observed interactions has to be ascribed to the friendship social network. On the other hand, the explaining power provided by the facebook network vanishes as soon as the friendship network is added to the model.</p>
 <p>Finally, we can use the <code>screenreg</code> function in the <code>texreg</code> package to nicely compare the different models and visualise them side by side. First, though we need to create a method for <code>screenreg</code> that is compatible with <code>nrm</code> objects. This will be included in the next version of <code>ghypernet</code>.</p>
 <pre class="r"><code>library(texreg)</code></pre>
-<pre><code>## Version:  1.36.23
-## Date:     2017-03-03
-## Author:   Philip Leifeld (University of Glasgow)
+<pre><code>## Version:  1.37.5
+## Date:     2020-06-17
+## Author:   Philip Leifeld (University of Essex)
 ## 
+## Consider submitting praise using the praise or praise_interactive functions.
 ## Please cite the JSS article in your publications -- see citation(&quot;texreg&quot;).</code></pre>
 <pre class="r"><code>## texreg package
 ## Texreg: does not (yet) support nrm or gyhpe-class
 # use the extract()-function to make this available
-extract.nrm.cluster &lt;- function(model,sumsum){
+extract.nrm.cluster &lt;- function(model, ...){
   # calculate SE, tvalues and pvalues
   coeffic &lt;- as.numeric(model$coef)
-  stderr &lt;- (model$confint[,2] - model$confint[,1])/5.15
-  tvalues = coeffic/stderr
-  pval &lt;- exp(-0.717*tvalues - 0.416*tvalues^2)
+  stderr &lt;- model$confint[,3]
+  tvalues = abs(coeffic/stderr)
+  pval &lt;- 2 * stats::pnorm(-tvalues)
   
   # then create and return a texreg object (replace NULL with actual values):
   tr &lt;- createTexreg(
@@ -662,246 +663,281 @@ setMethod(&quot;extract&quot;, signature = className(&quot;nrm&quot;, &quot;ghyp
        groups = list(&#39;Control&#39; = 1:3,  &#39;Friendship&#39; = 4:5,
                      &#39;Facebook&#39; = 6:7), 
        custom.model.names = c(&#39;$\\Theta^{(a)}$&#39; , &#39;$\\Theta^{(b)}$&#39; , &#39;$\\Theta^{(a\\dagger)}$&#39; , &#39;$\\Theta^{(b\\dagger)}$&#39; , &#39;$\\Theta^{(a\\dagger+b\\dagger)}$&#39;))</code></pre>
-<table cellspacing="0" align="center" style="border: none;">
-<caption align="bottom" style="margin-top:0.3em;">
+<table class="texreg" style="margin: 10px auto;border-collapse: collapse;border-spacing: 0px;caption-side: bottom;color: #000000;border-top: 2px solid #000000;">
+<caption>
 Statistical models
 </caption>
+<thead>
 <tr>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b></b>
+<th style="padding-left: 5px;padding-right: 5px;">
+ 
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b><span class="math inline">\(\Theta^{(a)}\)</span></b>
+<th style="padding-left: 5px;padding-right: 5px;">
+<span class="math inline">\(\Theta^{(a)}\)</span>
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b><span class="math inline">\(\Theta^{(b)}\)</span></b>
+<th style="padding-left: 5px;padding-right: 5px;">
+<span class="math inline">\(\Theta^{(b)}\)</span>
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b><span class="math inline">\(\Theta^{(a\dagger)}\)</span></b>
+<th style="padding-left: 5px;padding-right: 5px;">
+<span class="math inline">\(\Theta^{(a\dagger)}\)</span>
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b><span class="math inline">\(\Theta^{(b\dagger)}\)</span></b>
+<th style="padding-left: 5px;padding-right: 5px;">
+<span class="math inline">\(\Theta^{(b\dagger)}\)</span>
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b><span class="math inline">\(\Theta^{(a\dagger+b\dagger)}\)</span></b>
+<th style="padding-left: 5px;padding-right: 5px;">
+<span class="math inline">\(\Theta^{(a\dagger+b\dagger)}\)</span>
 </th>
 </tr>
-<tr>
-<td style="padding-right: 12px; border: none;">
+</thead>
+<tbody>
+<tr style="border-top: 1px solid #000000;">
+<td style="padding-left: 5px;padding-right: 5px;">
 Control
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(C)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-3.196 (0.011)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+3.196 (0.011)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-3.317 (0.011)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+3.317 (0.011)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-3.168 (0.011)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+3.168 (0.011)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(T)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-2.275 (0.021)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+2.275 (0.021)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-2.282 (0.021)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+2.282 (0.021)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-2.282 (0.021)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+2.282 (0.021)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(G)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.192 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.192 (0.005)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-0.256 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.256 (0.005)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-0.198 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.198 (0.005)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
 Friendship
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(f)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
-3.696 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+3.696 (0.005)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-1.810 (0.006)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+1.810 (0.006)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-1.821 (0.006)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+1.821 (0.006)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(1/2f)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
-2.147 (0.015)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+2.147 (0.015)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.385 (0.015)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.385 (0.015)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.421 (0.015)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.421 (0.015)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
 Facebook
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(\text{fb})}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-2.344 (0.006)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+2.344 (0.006)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.535 (0.006)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.535 (0.006)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-0.106 (0.006)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.106 (0.006)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(\varepsilon)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.564 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.564 (0.005)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.330 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.330 (0.005)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-0.356 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.356 (0.005)<sup>***</sup>
 </td>
 </tr>
-<tr>
-<td style="border-top: 1px solid black;">
+<tr style="border-top: 1px solid #000000;">
+<td style="padding-left: 5px;padding-right: 5px;">
 AIC
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 1110444.700
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 1238018.431
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 598194.895
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 665608.211
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 594141.269
 </td>
 </tr>
-<tr>
-<td style="border-bottom: 2px solid black;">
+<tr style="border-bottom: 2px solid #000000;">
+<td style="padding-left: 5px;padding-right: 5px;">
 McFadden <span class="math inline">\(R^2\)</span>
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.175
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.081
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.556
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.506
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.559
 </td>
 </tr>
+</tbody>
+<tfoot>
 <tr>
-<td style="padding-right: 12px; border: none;" colspan="7">
-<span style="font-size:0.8em"><sup style="vertical-align: 0px;"><em><strong></sup>p &lt; 0.001, <sup style="vertical-align: 0px;"></strong></sup>p &lt; 0.01, <sup style="vertical-align: 0px;"></em></sup>p &lt; 0.05</span>
+<td style="font-size: 0.8em;" colspan="6">
+<sup><em><strong></sup>p &lt; 0.001; <sup></strong></sup>p &lt; 0.01; <sup></em></sup>p &lt; 0.05
 </td>
 </tr>
+</tfoot>
 </table>
 </div>
 <div id="stepwise-model-selection" class="section level2">
@@ -933,17 +969,17 @@ init[7] &lt;- NULL</code></pre>
 <pre><code>## 
 ## Performing forward stepwise selection:</code></pre>
 <pre><code>## 
-## Step 1...</code></pre>
+## Step 1 of 6...</code></pre>
 <pre><code>## 
-## Step 2...</code></pre>
+## Step 2 of 6...</code></pre>
 <pre><code>## 
-## Step 3...</code></pre>
+## Step 3 of 6...</code></pre>
 <pre><code>## 
-## Step 4...</code></pre>
+## Step 4 of 6...</code></pre>
 <pre><code>## 
-## Step 5...</code></pre>
+## Step 5 of 6...</code></pre>
 <pre><code>## 
-## Step 6...</code></pre>
+## Step 6 of 6...</code></pre>
 <pre><code>## 
 ## Model estimation concluded.</code></pre>
 <pre><code>## Call:
@@ -1018,278 +1054,320 @@ init[7] &lt;- NULL</code></pre>
        groups = list(&#39;Control&#39; = 1:3,  &#39;Friendship&#39; = 4:5,
                      &#39;Facebook&#39; = 6:7), 
        custom.model.names = c(&#39;(1)&#39;, &#39;(2)&#39;, &#39;(3)&#39;, &#39;(4)&#39;,&#39;(5)&#39;,&#39;(6)&#39;))</code></pre>
-<table cellspacing="0" align="center" style="border: none;">
-<caption align="bottom" style="margin-top:0.3em;">
+<table class="texreg" style="margin: 10px auto;border-collapse: collapse;border-spacing: 0px;caption-side: bottom;color: #000000;border-top: 2px solid #000000;">
+<caption>
 Statistical models
 </caption>
+<thead>
 <tr>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b></b>
+<th style="padding-left: 5px;padding-right: 5px;">
+ 
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b>(1)</b>
+<th style="padding-left: 5px;padding-right: 5px;">
+(1)
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b>(2)</b>
+<th style="padding-left: 5px;padding-right: 5px;">
+(2)
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b>(3)</b>
+<th style="padding-left: 5px;padding-right: 5px;">
+(3)
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b>(4)</b>
+<th style="padding-left: 5px;padding-right: 5px;">
+(4)
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b>(5)</b>
+<th style="padding-left: 5px;padding-right: 5px;">
+(5)
 </th>
-<th style="text-align: left; border-top: 2px solid black; border-bottom: 1px solid black; padding-right: 12px;">
-<b>(6)</b>
+<th style="padding-left: 5px;padding-right: 5px;">
+(6)
 </th>
 </tr>
-<tr>
-<td style="padding-right: 12px; border: none;">
+</thead>
+<tbody>
+<tr style="border-top: 1px solid #000000;">
+<td style="padding-left: 5px;padding-right: 5px;">
 Control
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(C)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
-4.641 (0.007)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+4.641 (0.009)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-4.417 (0.007)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+4.417 (0.009)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-3.207 (0.008)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+3.207 (0.011)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-3.179 (0.008)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+3.179 (0.011)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-3.176 (0.008)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+3.176 (0.011)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-3.168 (0.008)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+3.168 (0.011)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(T)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-2.307 (0.016)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+2.307 (0.021)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-2.314 (0.016)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+2.314 (0.021)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-2.282 (0.016)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+2.282 (0.021)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-2.282 (0.016)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+2.282 (0.021)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(G)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.203 (0.004)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.203 (0.005)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-0.198 (0.004)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.198 (0.005)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
 Friendship
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(f)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-1.819 (0.004)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+1.819 (0.006)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-1.812 (0.004)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+1.812 (0.005)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-1.817 (0.004)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+1.817 (0.006)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-1.801 (0.004)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+1.801 (0.006)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-1.821 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+1.821 (0.006)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(1/2f)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.421 (0.011)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.421 (0.015)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
 Facebook
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(\text{fb})}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.121 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.121 (0.006)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-0.124 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.124 (0.006)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-0.106 (0.005)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.106 (0.006)<sup>***</sup>
 </td>
 </tr>
 <tr>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
      <span class="math inline">\(R^{(\varepsilon)}\)</span>
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
+<td style="padding-left: 5px;padding-right: 5px;">
+ 
 </td>
-<td style="padding-right: 12px; border: none;">
-0.347 (0.004)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.347 (0.005)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-0.351 (0.004)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.351 (0.005)<sup>***</sup>
 </td>
-<td style="padding-right: 12px; border: none;">
-0.356 (0.004)<sup style="vertical-align: 0px;">***</sup>
+<td style="padding-left: 5px;padding-right: 5px;">
+0.356 (0.005)<sup>***</sup>
 </td>
 </tr>
-<tr>
-<td style="border-top: 1px solid black;">
+<tr style="border-top: 1px solid #000000;">
+<td style="padding-left: 5px;padding-right: 5px;">
 AIC
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 98570.484
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 21283.604
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 6331.267
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 2474.950
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 715.033
 </td>
-<td style="border-top: 1px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.000
 </td>
 </tr>
-<tr>
-<td style="border-bottom: 2px solid black;">
+<tr style="border-bottom: 2px solid #000000;">
+<td style="padding-left: 5px;padding-right: 5px;">
 McFadden <span class="math inline">\(R^2\)</span>
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.486
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.543
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.554
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.557
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.558
 </td>
-<td style="border-bottom: 2px solid black;">
+<td style="padding-left: 5px;padding-right: 5px;">
 0.559
 </td>
 </tr>
+</tbody>
+<tfoot>
 <tr>
-<td style="padding-right: 12px; border: none;" colspan="8">
-<span style="font-size:0.8em"><sup style="vertical-align: 0px;"><em><strong></sup>p &lt; 0.001, <sup style="vertical-align: 0px;"></strong></sup>p &lt; 0.01, <sup style="vertical-align: 0px;"></em></sup>p &lt; 0.05</span>
+<td style="font-size: 0.8em;" colspan="7">
+<sup><em><strong></sup>p &lt; 0.001; <sup></strong></sup>p &lt; 0.01; <sup></em></sup>p &lt; 0.05
 </td>
 </tr>
+</tfoot>
 </table>
 </div>
 
