@@ -62,19 +62,19 @@ for(f in files){
 
 # load
 # contact edge list
-el_contacts <- read_table2("~/Documents/Matematica/SG/data/SocioPatterns/highschool/High-School_data_2013.csv", 
+el_contacts <- read_table2("data/High-School_data_2013.csv", 
                            col_names = FALSE, col_types = cols(X2 = col_character(), X3 = col_character()))
 
 # vertices metadata
-metadata <- read_table2("~/Documents/Matematica/SG/data/SocioPatterns/highschool/metadata_2013.txt", 
+metadata <- read_table2("data/metadata_2013.txt", 
                         col_names = FALSE, col_types = cols(X1 = col_character()))
 
 # facebook edge list
-el_fb <- read_table2("~/Documents/Matematica/SG/data/SocioPatterns/highschool/Facebook-known-pairs_data_2013.csv", 
+el_fb <- read_table2("data/Facebook-known-pairs_data_2013.csv", 
                         col_names = FALSE, col_types = cols(X1 = col_character(), X2 = col_character(), X3 = col_logical()))
 
 # friendship edge list
-el_fr <- read_table2("~/Documents/Matematica/SG/data/SocioPatterns/highschool/Friendship-network_data_2013.csv", 
+el_fr <- read_table2("data/Friendship-network_data_2013.csv", 
                      col_names = FALSE, col_types = cols(X1 = col_character(), X2 = col_character()))
 ```
 
