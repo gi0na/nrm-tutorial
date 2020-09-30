@@ -434,19 +434,19 @@ for(f in files){
 
 # load
 # contact edge list
-el_contacts &lt;- read_table2(&quot;~/Documents/Matematica/SG/data/SocioPatterns/highschool/High-School_data_2013.csv&quot;, 
+el_contacts &lt;- read_table2(&quot;data/High-School_data_2013.csv&quot;, 
                            col_names = FALSE, col_types = cols(X2 = col_character(), X3 = col_character()))
 
 # vertices metadata
-metadata &lt;- read_table2(&quot;~/Documents/Matematica/SG/data/SocioPatterns/highschool/metadata_2013.txt&quot;, 
+metadata &lt;- read_table2(&quot;data/metadata_2013.txt&quot;, 
                         col_names = FALSE, col_types = cols(X1 = col_character()))
 
 # facebook edge list
-el_fb &lt;- read_table2(&quot;~/Documents/Matematica/SG/data/SocioPatterns/highschool/Facebook-known-pairs_data_2013.csv&quot;, 
+el_fb &lt;- read_table2(&quot;data/Facebook-known-pairs_data_2013.csv&quot;, 
                         col_names = FALSE, col_types = cols(X1 = col_character(), X2 = col_character(), X3 = col_logical()))
 
 # friendship edge list
-el_fr &lt;- read_table2(&quot;~/Documents/Matematica/SG/data/SocioPatterns/highschool/Friendship-network_data_2013.csv&quot;, 
+el_fr &lt;- read_table2(&quot;data/Friendship-network_data_2013.csv&quot;, 
                      col_names = FALSE, col_types = cols(X1 = col_character(), X2 = col_character()))</code></pre>
 <p>Create the adjacency matrices for all the layer of the network regression model.</p>
 <pre class="r"><code># adjacency matrix
